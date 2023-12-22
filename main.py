@@ -7,6 +7,7 @@ import threading
 root = tk.Tk()
 root.title("Image Processing App")
 
+
 img = None
 selected_filters = {"User Defined": False, "Point Detection": IntVar(), "Line Detection": IntVar(),
                     "Edge Detection": IntVar(), "Laplacian Edge Detection": IntVar(), "Thresholding": IntVar()}
