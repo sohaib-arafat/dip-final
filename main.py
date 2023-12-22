@@ -1,72 +1,137 @@
 import tkinter as tk
-from tkinter import simpledialog, filedialog, messagebox
+from tkinter import simpledialog, filedialog, messagebox, IntVar
 import cv2
 import numpy as np
+import threading
 
-# Global variable to hold the image
-img = None
-
-# Initialize the main window
 root = tk.Tk()
-root.title("Image Processing Techniques")
+root.title("Image Processing App")
 
-# Function to apply the user-defined filter
-def apply_user_defined_filter(image, kernel):
-    return cv2.filter2D(image, -1, kernel)
+img = None
+selected_filters = {"User Defined": False, "Point Detection": IntVar(), "Line Detection": IntVar(),
+                    "Edge Detection": IntVar(), "Laplacian Edge Detection": IntVar(), "Thresholding": IntVar()}
 
-# Function to prompt the user for the filter size and coefficients
-def prompt_filter_coefficients():
-    filter_size = simpledialog.askinteger("Filter Size", "Enter the size of the filter (e.g., 3 for a 3x3 filter):",
-                                          parent=root, minvalue=1, maxvalue=11)
-    if filter_size:
-        coeff_window = tk.Toplevel(root)
-        coeff_window.title("Filter Coefficients")
-        entries = {}
-        for i in range(filter_size):
-            for j in range(filter_size):
-                entry = tk.Entry(coeff_window, width=5)
-                entry.grid(row=i, column=j)
-                entries[(i, j)] = entry
+def apply_user_defined_filter(img, kernel):
+    return cv2.filter2D(img, -1, kernel)
 
-        def collect_coefficients():
-            try:
-                kernel = np.zeros((filter_size, filter_size), dtype=np.float32)
-                for i in range(filter_size):
-                    for j in range(filter_size):
-                        kernel[i, j] = float(entries[(i, j)].get())
-                coeff_window.destroy()
-                process_image(kernel)
-            except ValueError:
-                messagebox.showerror("Invalid Input", "Please enter valid coefficients.")
+def apply_point_detection(img):
+    kernel = np.array([[0, -1, 0], [-1, 4, -1], [0, -1, 0]])
+    return cv2.filter2D(img, -1, kernel)
 
-        btn_apply = tk.Button(coeff_window, text="Apply Filter", command=collect_coefficients)
-        btn_apply.grid(row=filter_size, columnspan=filter_size)
+def apply_line_detection(img):
+    kernel = np.array([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]])
+    return cv2.filter2D(img, -1, kernel)
 
-# Function to open an image and apply the user-defined filter
-def process_image(kernel=None):
-    global img
-    if not img:
-        return
-    processed_img = img.copy()
-    if kernel is not None:
-        processed_img = apply_user_defined_filter(processed_img, kernel)
+def apply_edge_detection(img):
+    sobel_x = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)
+    sobel_y = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)
+    gradient_magnitude = np.sqrt(sobel_x**2 + sobel_y**2)
+    return np.uint8(gradient_magnitude)
+
+def apply_laplacian_edge_detection(img):
+    return cv2.Laplacian(img, cv2.CV_64F)
+
+def apply_thresholding(img):
+    _, thresholded_img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+    return thresholded_img
+
+def display_image(processed_img):
     cv2.imshow('Processed Image', processed_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-# Function to open an image
+def process_image(kernel_entries):
+    global img
+    if img is None:
+        messagebox.showerror("Error", "Please open an image first.")
+        return
+
+    try:
+        kernel_values = [float(entry.get()) for row_entries in kernel_entries for entry in row_entries]
+        kernel = np.array(kernel_values).reshape((len(kernel_entries), len(kernel_entries[0])))
+        processed_img = apply_user_defined_filter(img, kernel)
+
+        for filter_name, var in selected_filters.items():
+            if filter_name != "User Defined" and var.get():
+                processed_img = apply_filter(processed_img, filter_name)
+
+        display_thread = threading.Thread(target=display_image, args=(processed_img,))
+        display_thread.daemon = True
+        display_thread.start()
+
+    except ValueError:
+        messagebox.showerror("Error", "Invalid input for kernel entries.")
+
 def open_image():
     global img
     file_path = filedialog.askopenfilename()
     if file_path:
-        img = cv2.imread(file_path)
+        img = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
 
-# Image and filter buttons
+def create_kernel_input_window(size):
+    kernel_input_window = tk.Toplevel(root)
+    kernel_input_window.title(f"Kernel Input ({size}x{size})")
+
+    kernel_entries = [[tk.Entry(kernel_input_window, width=5) for _ in range(size)] for _ in range(size)]
+
+    for i, row_entries in enumerate(kernel_entries):
+        for j, entry in enumerate(row_entries):
+            entry.grid(row=i, column=j, padx=5, pady=5)
+
+    apply_button = tk.Button(kernel_input_window, text="Apply Filter", command=lambda: process_image(kernel_entries))
+    apply_button.grid(row=size, columnspan=size, pady=10)
+
+def prompt_filter_size():
+    size = simpledialog.askinteger("Filter Size", "Enter the size of the filter (e.g., 3, 4, 5):",
+                                   parent=root, minvalue=1)
+    if size is not None:
+        create_kernel_input_window(size)
+
+def apply_filter(img, filter_name):
+    if filter_name == "Point Detection":
+        return apply_point_detection(img)
+    elif filter_name == "Line Detection":
+        return apply_line_detection(img)
+    elif filter_name == "Edge Detection":
+        return apply_edge_detection(img)
+    elif filter_name == "Laplacian Edge Detection":
+        return apply_laplacian_edge_detection(img)
+    elif filter_name == "Thresholding":
+        return apply_thresholding(img)
+    else:
+        return img
+
+def apply_checkbox_filters():
+    global img
+    if img is None:
+        messagebox.showerror("Error", "Please open an image first.")
+        return
+
+    try:
+        processed_img = np.copy(img)
+
+        for filter_name, var in selected_filters.items():
+            if filter_name != "User Defined" and var.get():
+                processed_img = apply_filter(processed_img, filter_name)
+
+        display_thread = threading.Thread(target=display_image, args=(processed_img,))
+        display_thread.daemon = True
+        display_thread.start()
+
+    except ValueError:
+        messagebox.showerror("Error", "An error occurred while applying checkbox filters.")
+
 btn_load_image = tk.Button(root, text="Open Image", command=open_image)
 btn_load_image.pack()
 
-btn_apply_filter = tk.Button(root, text="Apply Custom Filter", command=prompt_filter_coefficients)
-btn_apply_filter.pack()
+btn_prompt_filter_size = tk.Button(root, text="Specify Filter Size", command=prompt_filter_size)
+btn_prompt_filter_size.pack()
 
-# Start the GUI event loop
+filter_checkboxes = {filter_name: tk.Checkbutton(root, text=filter_name, variable=var) for filter_name, var in selected_filters.items() if filter_name != "User Defined"}
+for checkbox in filter_checkboxes.values():
+    checkbox.pack()
+
+btn_apply_filters = tk.Button(root, text="Apply Selected Filters", command=apply_checkbox_filters)
+btn_apply_filters.pack()
+
 root.mainloop()
