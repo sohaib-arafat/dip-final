@@ -7,10 +7,20 @@ import threading
 root = tk.Tk()
 root.title("Image Processing App")
 
-
 img = None
-selected_filters = {"User Defined": False, "Point Detection": IntVar(), "Line Detection": IntVar(),
-                    "Edge Detection": IntVar(), "Laplacian Edge Detection": IntVar(), "Thresholding": IntVar()}
+selected_filters = {
+    "User Defined": False,
+    "Point Detection": IntVar(),
+    "Line Detection": IntVar(),
+    "Edge Detection": IntVar(),
+    "Laplacian Edge Detection": IntVar(),
+    "Thresholding": IntVar(),
+    "Horizontal Line Detection": IntVar(),
+    "Vertical Line Detection": IntVar(),
+    "45-Degree Line Detection": IntVar(),
+    "-45-Degree Line Detection": IntVar(),
+    "Laplacian of Gaussian": IntVar()
+}
 
 def apply_user_defined_filter(img, kernel):
     return cv2.filter2D(img, -1, kernel)
@@ -33,8 +43,35 @@ def apply_laplacian_edge_detection(img):
     return cv2.Laplacian(img, cv2.CV_64F)
 
 def apply_thresholding(img):
-    _, thresholded_img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+    _, thresholded_img = cv2.threshold(img, 60, 255, cv2.THRESH_BINARY)
     return thresholded_img
+
+def apply_horizontal_line_detection(img):
+    kernel = np.array([[-1, -1, -1],
+                       [2, 2, 2],
+                       [-1, -1, -1]])
+    return cv2.filter2D(img, -1, kernel)
+
+def apply_vertical_line_detection(img):
+    kernel = np.array([[-1, 2, -1],
+                       [-1, 2, -1],
+                       [-1, 2, -1]])
+    return cv2.filter2D(img, -1, kernel)
+
+def apply_45_degree_line_detection(img):
+    kernel = np.array([[-1, -1, 2],
+                       [-1, 2, -1],
+                       [2, -1, -1]])
+    return cv2.filter2D(img, -1, kernel)
+
+def apply_minus_45_degree_line_detection(img):
+    kernel = np.array([[2, -1, -1],
+                       [-1, 2, -1],
+                       [-1, -1, 2]])
+    return cv2.filter2D(img, -1, kernel)
+
+def apply_laplacian_of_gaussian(img):
+    return cv2.Laplacian(cv2.GaussianBlur(img, (3, 3), 0), cv2.CV_64F)
 
 def display_image(processed_img):
     cv2.imshow('Processed Image', processed_img)
@@ -99,6 +136,16 @@ def apply_filter(img, filter_name):
         return apply_laplacian_edge_detection(img)
     elif filter_name == "Thresholding":
         return apply_thresholding(img)
+    elif filter_name == "Horizontal Line Detection":
+        return apply_horizontal_line_detection(img)
+    elif filter_name == "Vertical Line Detection":
+        return apply_vertical_line_detection(img)
+    elif filter_name == "45-Degree Line Detection":
+        return apply_45_degree_line_detection(img)
+    elif filter_name == "-45-Degree Line Detection":
+        return apply_minus_45_degree_line_detection(img)
+    elif filter_name == "Laplacian of Gaussian":
+        return apply_laplacian_of_gaussian(img)
     else:
         return img
 
