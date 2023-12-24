@@ -5,7 +5,7 @@ import numpy as np
 import threading
 
 root = tk.Tk()
-root.title("Image Processing App")
+root.title("Image Processing HW 2")
 
 img = None
 selected_filters = {
@@ -98,7 +98,7 @@ def process_image(kernel_entries):
         display_thread.start()
 
     except ValueError:
-        messagebox.showerror("Error", "Invalid input for kernel entries.")
+        messagebox.showerror("Error", "Invalid input")
 
 def open_image():
     global img
@@ -167,12 +167,12 @@ def apply_checkbox_filters():
         display_thread.start()
 
     except ValueError:
-        messagebox.showerror("Error", "An error occurred while applying checkbox filters.")
+        messagebox.showerror("Error", "Can't apply dilters")
 
 btn_load_image = tk.Button(root, text="Open Image", command=open_image)
 btn_load_image.pack()
 
-btn_prompt_filter_size = tk.Button(root, text="Specify Filter Size", command=prompt_filter_size)
+btn_prompt_filter_size = tk.Button(root, text="Filter Size", command=prompt_filter_size)
 btn_prompt_filter_size.pack()
 
 filter_checkboxes = {filter_name: tk.Checkbutton(root, text=filter_name, variable=var) for filter_name, var in selected_filters.items() if filter_name != "User Defined"}
