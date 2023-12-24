@@ -120,7 +120,7 @@ def create_kernel_input_window(size):
     apply_button.grid(row=size, columnspan=size, pady=10)
 
 def prompt_filter_size():
-    size = simpledialog.askinteger("Filter Size", "Enter the size of the filter (e.g., 3, 4, 5):",
+    size = simpledialog.askinteger("Filter Size", "Enter the size of the filter :",
                                    parent=root, minvalue=1)
     if size is not None:
         create_kernel_input_window(size)
