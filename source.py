@@ -167,7 +167,7 @@ def apply_checkbox_filters():
         display_thread.start()
 
     except ValueError:
-        messagebox.showerror("Error", "Can't apply dilters")
+        messagebox.showerror("Error", "Can't apply filters")
 
 btn_load_image = tk.Button(root, text="Open Image", command=open_image)
 btn_load_image.pack()
